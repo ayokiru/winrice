@@ -178,7 +178,6 @@ fn find_named<'a>(doc: &'a J, list: &str, names: &[String]) -> Vec<&'a J> {
         .collect()
 }
 
-/// Builds the updated settings document and the list of changes.
 /// Font faces used by the current Terminal look.
 pub fn font_faces(sys: &dyn System) -> Vec<String> {
     let Some(doc) = settings_path(sys).and_then(|p| load(&p).ok()) else {
@@ -236,9 +235,11 @@ fn set(changes: &mut Vec<Change>, slot: &mut J, key: String, new: J) {
     }
 }
 
-fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
+/// Builds the updated document, the changes, and the setup files apply must copy.
+fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>, Vec<PathBuf>)> {
     let mut doc = doc.clone();
     let mut changes = Vec::new();
+    let mut copies = Vec::new();
 
     for (key, value) in section {
         match key.as_str() {
@@ -266,6 +267,7 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
                     if let Some(src) = background(k, v, ctx)? {
                         let dest = files::stable_path(&src, &ctx.data_dir.join("terminal"))?;
                         new = J::String(dest.to_string_lossy().into_owned());
+                        copies.push(src);
                     }
                     let slot = &mut doc["profiles"]["defaults"][k];
                     set(&mut changes, slot, format!("defaults.{k}"), new.clone());
@@ -312,7 +314,7 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
             _ => crate::ui::warn(format_args!("terminal.{key} is not supported, skipped")),
         }
     }
-    Ok((doc, changes))
+    Ok((doc, changes, copies))
 }
 
 fn write_settings(path: &Path, doc: &J) -> Result<()> {
@@ -429,15 +431,11 @@ impl Module for Terminal {
             ));
             return Ok(Vec::new());
         };
-        let (doc, changes) = compute(&load(&path)?, section, ctx)?;
+        let (doc, changes, copies) = compute(&load(&path)?, section, ctx)?;
         if changes.is_empty() {
             return Ok(changes);
         }
-        if let Some(v) = section
-            .get("defaults")
-            .and_then(|d| d.get("backgroundImage"))
-            && let Some(src) = background("backgroundImage", v, ctx)?
-        {
+        for src in copies {
             files::stable_copy(&src, &ctx.data_dir.join("terminal"))?;
         }
         write_settings(&path, &doc)?;
