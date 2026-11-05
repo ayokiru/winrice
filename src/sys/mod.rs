@@ -14,6 +14,7 @@ pub use windows::WinSystem;
 pub enum RegValue {
     Dword(u32),
     Str(String),
+    Binary(Vec<u8>),
 }
 
 /// Registry paths are relative to HKEY_CURRENT_USER unless stated otherwise.

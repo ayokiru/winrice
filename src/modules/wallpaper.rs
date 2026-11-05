@@ -23,7 +23,7 @@ fn reg_str(sys: &dyn System, name: &str) -> Result<Option<String>> {
     Ok(match sys.reg_get(DESKTOP, name)? {
         Some(RegValue::Str(s)) => Some(s),
         Some(RegValue::Dword(n)) => Some(n.to_string()),
-        None => None,
+        _ => None,
     })
 }
 

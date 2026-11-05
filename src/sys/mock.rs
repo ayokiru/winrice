@@ -43,7 +43,7 @@ impl System for MockSystem {
             .filter(|((p, _), _)| *p == path)
             .filter_map(|((_, n), v)| match v {
                 RegValue::Str(s) => Some((n.clone(), s.clone())),
-                RegValue::Dword(_) => None,
+                _ => None,
             })
             .collect();
         out.sort();

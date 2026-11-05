@@ -10,7 +10,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     WM_SETTINGCHANGE,
 };
 use winreg::RegKey;
-use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, REG_BINARY};
 
 pub struct WinSystem {
     hkcu: RegKey,
@@ -36,7 +36,14 @@ impl System for WinSystem {
         if let Ok(v) = key.get_value::<u32, _>(name) {
             return Ok(Some(RegValue::Dword(v)));
         }
-        Ok(key.get_value::<String, _>(name).ok().map(RegValue::Str))
+        if let Ok(v) = key.get_value::<String, _>(name) {
+            return Ok(Some(RegValue::Str(v)));
+        }
+        Ok(key
+            .get_raw_value(name)
+            .ok()
+            .filter(|v| v.vtype == REG_BINARY)
+            .map(|v| RegValue::Binary(v.bytes.into_owned())))
     }
 
     fn reg_list(&self, machine: bool, path: &str) -> Result<Vec<(String, String)>> {
@@ -63,6 +70,13 @@ impl System for WinSystem {
         match value {
             RegValue::Dword(v) => key.set_value(name, v),
             RegValue::Str(v) => key.set_value(name, v),
+            RegValue::Binary(v) => key.set_raw_value(
+                name,
+                &winreg::RegValue {
+                    bytes: v.as_slice().into(),
+                    vtype: REG_BINARY,
+                },
+            ),
         }
         .with_context(|| format!("cannot write HKCU\\{path}\\{name}"))
     }
