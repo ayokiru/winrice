@@ -172,6 +172,11 @@ impl Module for Fonts {
         Ok(t)
     }
 
+    /// Rollback never uninstalls fonts, so copying them into every backup is wasted space.
+    fn backup(&self, _sys: &dyn System, _ctx: &Ctx) -> Result<Table> {
+        Ok(Table::new())
+    }
+
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
         Ok(missing(sys, section, ctx)?
             .iter()
