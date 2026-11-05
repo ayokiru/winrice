@@ -53,7 +53,9 @@ impl Setup {
                 Value::Table(t) => {
                     sections.insert(name, t);
                 }
-                _ => eprintln!("warning: top-level key \"{name}\" is not a section, skipped"),
+                _ => crate::ui::warn(format_args!(
+                    "top-level key \"{name}\" is not a section, skipped"
+                )),
             }
         }
         Ok(Self { meta, sections })

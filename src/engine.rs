@@ -65,7 +65,9 @@ fn known_sections(setup: &Setup) -> Vec<String> {
     let names: Vec<String> = setup.sections.keys().cloned().collect();
     for n in &names {
         if modules::find(n).is_none() {
-            eprintln!("warning: module \"{n}\" is not supported by this version, skipped");
+            crate::ui::warn(format_args!(
+                "module \"{n}\" is not supported by this version, skipped"
+            ));
         }
     }
     names

@@ -219,7 +219,7 @@ pub fn resolve(spec: &str, data_dir: &Path) -> Result<Source> {
     let Some(remote) = parse(spec) else {
         bail!("\"{spec}\" is not a setup folder or a GitHub repository (owner/repo)");
     };
-    eprintln!("Downloading {}...", remote.label());
+    crate::ui::step(format_args!("Downloading {}...", remote.label()));
     let bytes = download(&remote)?;
     let dest = data_dir
         .join("remote")

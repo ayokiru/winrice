@@ -235,7 +235,9 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
                 }
                 for (k, v) in defaults {
                     if !PROFILE_KEYS.contains(&k.as_str()) {
-                        eprintln!("warning: terminal.defaults.{k} is not supported, skipped");
+                        crate::ui::warn(format_args!(
+                            "terminal.defaults.{k} is not supported, skipped"
+                        ));
                         continue;
                     }
                     let mut new = toml_to_json(v);
@@ -290,7 +292,7 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
                     }
                 }
             }
-            _ => eprintln!("warning: terminal.{key} is not supported, skipped"),
+            _ => crate::ui::warn(format_args!("terminal.{key} is not supported, skipped")),
         }
     }
     Ok((doc, changes))
@@ -346,7 +348,7 @@ impl Module for Terminal {
                 fs::copy(&src, ctx.assets.join(&rel))?;
                 profile.insert("backgroundImage".into(), J::String(rel));
             } else if bg != "desktopWallpaper" {
-                eprintln!("warning: terminal background {bg} not found, skipped");
+                crate::ui::warn(format_args!("terminal background {bg} not found, skipped"));
                 profile.remove("backgroundImage");
             }
         }
@@ -374,7 +376,9 @@ impl Module for Terminal {
 
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
         let Some(path) = settings_path(sys) else {
-            eprintln!("warning: Windows Terminal settings not found, terminal skipped");
+            crate::ui::warn(format_args!(
+                "Windows Terminal settings not found, terminal skipped"
+            ));
             return Ok(Vec::new());
         };
         Ok(compute(&load(&path)?, section, ctx)?.1)
@@ -382,7 +386,9 @@ impl Module for Terminal {
 
     fn apply(&self, sys: &mut dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
         let Some(path) = settings_path(sys) else {
-            eprintln!("warning: Windows Terminal settings not found, terminal skipped");
+            crate::ui::warn(format_args!(
+                "Windows Terminal settings not found, terminal skipped"
+            ));
             return Ok(Vec::new());
         };
         let (doc, changes) = compute(&load(&path)?, section, ctx)?;

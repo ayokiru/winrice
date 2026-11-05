@@ -197,7 +197,10 @@ impl Module for RegModule {
         let mut changes = Vec::new();
         for (key, value) in section {
             let Some(s) = self.settings.iter().find(|s| s.key == key) else {
-                eprintln!("warning: {}.{key} is not supported, skipped", self.name);
+                crate::ui::warn(format_args!(
+                    "{}.{key} is not supported, skipped",
+                    self.name
+                ));
                 continue;
             };
             let target = s.parse_value(value)?;

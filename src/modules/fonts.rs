@@ -148,7 +148,9 @@ impl Module for Fonts {
             }
             let found = font_files(sys, &face)?;
             if found.is_empty() {
-                eprintln!("warning: font \"{face}\" not found, it will not be bundled");
+                crate::ui::warn(format_args!(
+                    "font \"{face}\" not found, it will not be bundled"
+                ));
             }
             for src in found {
                 let rel = format!("fonts/{}", file_name(&src));
@@ -159,7 +161,9 @@ impl Module for Fonts {
         }
         let mut t = Table::new();
         if !list.is_empty() {
-            eprintln!("note: check font licenses before sharing a setup publicly");
+            crate::ui::note(format_args!(
+                "check font licenses before sharing a setup publicly"
+            ));
             t.insert("files".into(), Value::Array(list));
         }
         Ok(t)

@@ -132,7 +132,7 @@ impl Module for Cursors {
                         fs::copy(&path, ctx.assets.join(&rel))?;
                         rel
                     } else {
-                        eprintln!("warning: cursor {path} not found, {key} skipped");
+                        crate::ui::warn(format_args!("cursor {path} not found, {key} skipped"));
                         continue;
                     }
                 }
@@ -162,7 +162,7 @@ impl Module for Cursors {
                 }
                 _ => {
                     let Some((_, name)) = ROLES.iter().find(|(k, _)| k == key) else {
-                        eprintln!("warning: cursors.{key} is not supported, skipped");
+                        crate::ui::warn(format_args!("cursors.{key} is not supported, skipped"));
                         continue;
                     };
                     let cur = current(sys, name)?;
