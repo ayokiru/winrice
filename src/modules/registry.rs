@@ -1,6 +1,6 @@
 //! Modules that are plain HKCU registry values.
 
-use super::{Change, Ctx, Module};
+use super::{Change, Ctx, Module, UNSET, unset_keys};
 use crate::sys::{RegValue, System};
 use anyhow::{Result, bail};
 use toml::{Table, Value};
@@ -193,9 +193,35 @@ impl Module for RegModule {
         Ok(t)
     }
 
+    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+        let mut t = self.capture(sys, ctx)?;
+        let mut unset = Vec::new();
+        for s in self.settings {
+            if sys.reg_get(s.path, s.name)?.is_none() {
+                unset.push(Value::String(s.key.into()));
+            }
+        }
+        if !unset.is_empty() {
+            t.insert(UNSET.into(), Value::Array(unset));
+        }
+        Ok(t)
+    }
+
     fn plan(&self, sys: &dyn System, section: &Table, _ctx: &Ctx) -> Result<Vec<Change>> {
         let mut changes = Vec::new();
-        for (key, value) in section {
+        for key in unset_keys(section)? {
+            let Some(s) = self.settings.iter().find(|s| s.key == key) else {
+                continue;
+            };
+            if let Some(cur) = sys.reg_get(s.path, s.name)? {
+                changes.push(Change {
+                    key: key.into(),
+                    from: s.format_value(&cur).map(|v| v.to_string()),
+                    to: "unset".into(),
+                });
+            }
+        }
+        for (key, value) in section.iter().filter(|(k, _)| *k != UNSET) {
             let Some(s) = self.settings.iter().find(|s| s.key == key) else {
                 crate::ui::warn(format_args!(
                     "{}.{key} is not supported, skipped",
@@ -222,7 +248,10 @@ impl Module for RegModule {
         let changes = self.plan(sys, section, ctx)?;
         for c in &changes {
             let s = self.settings.iter().find(|s| s.key == c.key).unwrap();
-            sys.reg_set(s.path, s.name, &s.parse_value(&section[&c.key])?)?;
+            match section.get(&c.key) {
+                Some(v) => sys.reg_set(s.path, s.name, &s.parse_value(v)?)?,
+                None => sys.reg_delete(s.path, s.name)?,
+            }
         }
         Ok(changes)
     }

@@ -10,7 +10,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     WM_SETTINGCHANGE,
 };
 use winreg::RegKey;
-use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, REG_BINARY};
+use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_SET_VALUE, REG_BINARY};
 
 pub struct WinSystem {
     hkcu: RegKey,
@@ -79,6 +79,18 @@ impl System for WinSystem {
             ),
         }
         .with_context(|| format!("cannot write HKCU\\{path}\\{name}"))
+    }
+
+    fn reg_delete(&mut self, path: &str, name: &str) -> Result<()> {
+        let Ok(key) = self.hkcu.open_subkey_with_flags(path, KEY_SET_VALUE) else {
+            return Ok(());
+        };
+        match key.delete_value(name) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+                Err(e).with_context(|| format!("cannot delete HKCU\\{path}\\{name}"))
+            }
+            _ => Ok(()),
+        }
     }
 
     fn wallpaper(&self) -> Result<Option<PathBuf>> {

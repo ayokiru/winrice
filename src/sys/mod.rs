@@ -23,6 +23,8 @@ pub trait System {
     /// String values of a key; `machine` reads HKEY_LOCAL_MACHINE instead.
     fn reg_list(&self, machine: bool, path: &str) -> Result<Vec<(String, String)>>;
     fn reg_set(&mut self, path: &str, name: &str, value: &RegValue) -> Result<()>;
+    /// Removes a value; a missing value is not an error.
+    fn reg_delete(&mut self, path: &str, name: &str) -> Result<()>;
     fn wallpaper(&self) -> Result<Option<PathBuf>>;
     fn set_wallpaper(&mut self, path: &Path) -> Result<()>;
     /// Makes Windows reload cursors from the registry.

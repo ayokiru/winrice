@@ -29,9 +29,25 @@ pub trait Module {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
     fn capture(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table>;
+    /// What to save before an apply so rollback can restore it.
+    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+        self.capture(sys, ctx)
+    }
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>>;
     /// Applies the section and returns what actually changed.
     fn apply(&self, sys: &mut dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>>;
+}
+
+/// Backup key listing values that did not exist before an apply; rollback deletes them.
+pub const UNSET: &str = "unset";
+
+pub fn unset_keys(section: &Table) -> Result<Vec<&str>> {
+    let Some(list) = section.get(UNSET) else {
+        return Ok(Vec::new());
+    };
+    list.as_array()
+        .and_then(|l| l.iter().map(|v| v.as_str()).collect())
+        .ok_or_else(|| anyhow::anyhow!("{UNSET} must be a list of key names"))
 }
 
 pub fn all() -> Vec<Box<dyn Module>> {

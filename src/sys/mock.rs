@@ -55,6 +55,11 @@ impl System for MockSystem {
         Ok(())
     }
 
+    fn reg_delete(&mut self, path: &str, name: &str) -> Result<()> {
+        self.reg.remove(&(path.into(), name.into()));
+        Ok(())
+    }
+
     fn wallpaper(&self) -> Result<Option<PathBuf>> {
         Ok(self.wallpaper.clone())
     }

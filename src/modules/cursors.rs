@@ -5,7 +5,7 @@
 //!   "system:<file>"    - file from %SystemRoot%\Cursors, not copied
 //!   "cursors/<file>"   - file shipped in the setup's assets
 
-use super::{Change, Ctx, Module, files};
+use super::{Change, Ctx, Module, UNSET, files, unset_keys};
 use crate::sys::{RegValue, System};
 use anyhow::{Context, Result, bail};
 use std::fs;
@@ -143,9 +143,30 @@ impl Module for Cursors {
         Ok(t)
     }
 
+    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+        let mut t = self.capture(sys, ctx)?;
+        t.entry("scheme").or_insert(Value::String(String::new()));
+        if sys.reg_get(CURSORS, "CursorBaseSize")?.is_none() {
+            t.insert(
+                UNSET.into(),
+                Value::Array(vec![Value::String("size".into())]),
+            );
+        }
+        Ok(t)
+    }
+
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
         let mut changes = Vec::new();
-        for (key, value) in section {
+        if unset_keys(section)?.contains(&"size")
+            && let Some(RegValue::Dword(n)) = sys.reg_get(CURSORS, "CursorBaseSize")?
+        {
+            changes.push(Change {
+                key: "size".into(),
+                from: Some(n.to_string()),
+                to: "unset".into(),
+            });
+        }
+        for (key, value) in section.iter().filter(|(k, _)| *k != UNSET) {
             let from = match key.as_str() {
                 "scheme" => {
                     let cur = reg_string(sys, "")?.unwrap_or_default();
@@ -185,7 +206,11 @@ impl Module for Cursors {
     fn apply(&self, sys: &mut dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
         let changes = self.plan(sys, section, ctx)?;
         for c in &changes {
-            let value = &section[&c.key];
+            let Some(value) = section.get(&c.key) else {
+                // Only "size" can be listed in UNSET.
+                sys.reg_delete(CURSORS, "CursorBaseSize")?;
+                continue;
+            };
             match c.key.as_str() {
                 "scheme" => {
                     let s = value.as_str().unwrap_or_default().to_string();
@@ -267,5 +292,20 @@ mod tests {
         );
         assert!(Cursors.plan(&target, &section, &ctx).unwrap().is_empty());
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn backup_restores_missing_size() {
+        let ctx = Ctx {
+            assets: "a".into(),
+            data_dir: "d".into(),
+        };
+        let mut sys = MockSystem::default();
+        let backup = Cursors.backup(&sys, &ctx).unwrap();
+        sys.reg_set(CURSORS, "CursorBaseSize", &RegValue::Dword(48))
+            .unwrap();
+        let changes = Cursors.apply(&mut sys, &backup, &ctx).unwrap();
+        assert_eq!(changes[0].to, "unset");
+        assert_eq!(sys.reg_get(CURSORS, "CursorBaseSize").unwrap(), None);
     }
 }

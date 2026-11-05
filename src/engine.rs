@@ -42,6 +42,17 @@ pub fn capture(
     only: &[String],
     data_dir: &Path,
 ) -> Result<Setup> {
+    save(sys, out, name, select(only)?, data_dir, false)
+}
+
+fn save(
+    sys: &dyn System,
+    out: &Path,
+    name: &str,
+    modules: Vec<Box<dyn Module>>,
+    data_dir: &Path,
+    backup: bool,
+) -> Result<Setup> {
     let ctx = ctx(out, data_dir);
     let mut setup = Setup {
         meta: Meta {
@@ -51,8 +62,12 @@ pub fn capture(
         },
         ..Setup::default()
     };
-    for m in select(only)? {
-        let section = m.capture(sys, &ctx)?;
+    for m in modules {
+        let section = if backup {
+            m.backup(sys, &ctx)?
+        } else {
+            m.capture(sys, &ctx)?
+        };
         if !section.is_empty() {
             setup.sections.insert(m.name().into(), section);
         }
@@ -101,7 +116,7 @@ pub fn apply(
     let names = known_sections(setup);
     if backup {
         let path = data_dir.join("backups").join(timestamp());
-        capture(sys, &path, "backup", &names, data_dir)?;
+        save(sys, &path, "backup", select(&names)?, data_dir, true)?;
         prune_backups(data_dir)?;
     }
     let ctx = ctx(dir, data_dir);
@@ -185,6 +200,31 @@ mod tests {
             Some(RegValue::Dword(1))
         );
         assert!(backups(&data).unwrap().is_empty());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rollback_removes_values_that_did_not_exist() {
+        let root = std::env::temp_dir().join(format!("winrice-unset-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let data = root.join("data");
+        let setup: Setup = {
+            let mut s = Setup::default();
+            s.sections.insert(
+                "taskbar".into(),
+                toml::from_str("alignment = \"left\"").unwrap(),
+            );
+            s
+        };
+        let mut sys = MockSystem::default();
+        apply(&mut sys, &setup, &root, &data, true).unwrap();
+        assert_eq!(
+            sys.reg_get(ADVANCED, "TaskbarAl").unwrap(),
+            Some(RegValue::Dword(0))
+        );
+        let undone = rollback(&mut sys, &data).unwrap();
+        assert_eq!(undone[0].1.len(), 1);
+        assert_eq!(sys.reg_get(ADVANCED, "TaskbarAl").unwrap(), None);
         fs::remove_dir_all(root).unwrap();
     }
 
