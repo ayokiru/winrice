@@ -1,7 +1,8 @@
 //! File helpers shared by modules that ship assets.
 
+use super::Ctx;
 use crate::sys::System;
-use anyhow::Result;
+use anyhow::{Result, bail};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -10,6 +11,23 @@ fn hash(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf29ce484222325, |h, b| {
         (h ^ *b as u64).wrapping_mul(0x100000001b3)
     })
+}
+
+/// Resolves a file shipped in the setup. Setups may come from strangers, so only plain
+/// relative paths are allowed: no drives, UNC shares (they leak NTLM hashes) or `..`.
+pub fn asset(ctx: &Ctx, rel: &str) -> Result<PathBuf> {
+    let unsafe_path = rel.is_empty()
+        || rel.contains(':')
+        || rel.starts_with(['\\', '/'])
+        || rel.split(['\\', '/']).any(|part| part == "..");
+    if unsafe_path {
+        bail!("\"{rel}\" must be a relative path inside the setup folder");
+    }
+    let path = ctx.assets.join(rel);
+    if !path.is_file() {
+        bail!("{} not found", path.display());
+    }
+    Ok(path)
 }
 
 pub fn ext(path: &Path, fallback: &str) -> String {
@@ -65,6 +83,29 @@ pub fn expand(sys: &dyn System, s: &str) -> String {
 mod tests {
     use super::*;
     use crate::sys::mock::MockSystem;
+
+    #[test]
+    fn asset_rejects_paths_outside_the_setup() {
+        let dir = std::env::temp_dir().join(format!("winrice-asset-{}", std::process::id()));
+        fs::create_dir_all(dir.join("sub")).unwrap();
+        fs::write(dir.join("sub/a.jpg"), b"x").unwrap();
+        let ctx = Ctx {
+            assets: dir.clone(),
+            data_dir: dir.clone(),
+        };
+        assert!(asset(&ctx, "sub/a.jpg").is_ok());
+        for bad in [
+            r"\\evil\share\a.jpg",
+            r"C:\Windows\a.jpg",
+            "/etc/passwd",
+            "../a.jpg",
+            r"sub\..\..\a.jpg",
+            "",
+        ] {
+            assert!(asset(&ctx, bad).is_err(), "{bad}");
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn expands_known_vars_only() {

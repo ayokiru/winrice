@@ -7,7 +7,7 @@
 
 use super::{Change, Ctx, Module, files};
 use crate::sys::{RegValue, System};
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml::{Table, Value};
@@ -80,13 +80,14 @@ fn target(key: &str, v: &Value, ctx: &Ctx) -> Result<Target> {
         return Ok(Target::Default);
     }
     if let Some(file) = s.strip_prefix("system:") {
+        if file.is_empty() || file.contains(['\\', '/', ':']) {
+            bail!("cursors.{key}: \"{s}\" must name a file in the system cursor folder");
+        }
         return Ok(Target::System(file.into()));
     }
-    let p = ctx.assets.join(s);
-    if !p.is_file() {
-        bail!("cursors.{key}: file {} not found", p.display());
-    }
-    Ok(Target::Asset(p))
+    Ok(Target::Asset(
+        files::asset(ctx, s).with_context(|| format!("cursors.{key}"))?,
+    ))
 }
 
 fn matches(sys: &dyn System, current: &Option<String>, target: &Target) -> bool {

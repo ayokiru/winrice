@@ -179,12 +179,6 @@ fn find_named<'a>(doc: &'a J, list: &str, names: &[String]) -> Vec<&'a J> {
         .collect()
 }
 
-/// Relative paths point into the setup's assets; "desktopWallpaper" is a keyword.
-fn is_asset(v: &str) -> bool {
-    v != "desktopWallpaper"
-        && !(v.contains(':') || v.starts_with('%') || v.starts_with('\\') || v.starts_with('/'))
-}
-
 /// Builds the updated settings document and the list of changes.
 /// Font faces used by the current Terminal look.
 pub fn font_faces(sys: &dyn System) -> Vec<String> {
@@ -201,6 +195,20 @@ pub fn font_faces(sys: &dyn System) -> Vec<String> {
         .filter(|f| !f.is_empty())
         .map(String::from)
         .collect()
+}
+
+/// Setup file to use as the background; only setup files or "desktopWallpaper" are allowed.
+fn background(key: &str, v: &Value, ctx: &Ctx) -> Result<Option<PathBuf>> {
+    if key != "backgroundImage" {
+        return Ok(None);
+    }
+    match v.as_str() {
+        Some("desktopWallpaper") => Ok(None),
+        Some(rel) => files::asset(ctx, rel)
+            .context("terminal.defaults.backgroundImage")
+            .map(Some),
+        None => bail!("terminal.defaults.backgroundImage: expected a file name, got {v}"),
+    }
 }
 
 fn set(changes: &mut Vec<Change>, slot: &mut J, key: String, new: J) {
@@ -241,13 +249,8 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
                         continue;
                     }
                     let mut new = toml_to_json(v);
-                    let asset = v.as_str().filter(|r| k == "backgroundImage" && is_asset(r));
-                    if let Some(rel) = asset {
-                        let dest = files::stable_path(
-                            &ctx.assets.join(rel),
-                            &ctx.data_dir.join("terminal"),
-                        )
-                        .with_context(|| format!("terminal background {rel} not found"))?;
+                    if let Some(src) = background(k, v, ctx)? {
+                        let dest = files::stable_path(&src, &ctx.data_dir.join("terminal"))?;
                         new = J::String(dest.to_string_lossy().into_owned());
                     }
                     let slot = &mut doc["profiles"]["defaults"][k];
@@ -395,12 +398,12 @@ impl Module for Terminal {
         if changes.is_empty() {
             return Ok(changes);
         }
-        if let Some(Value::String(rel)) = section
+        if let Some(v) = section
             .get("defaults")
             .and_then(|d| d.get("backgroundImage"))
-            .filter(|v| v.as_str().is_some_and(is_asset))
+            && let Some(src) = background("backgroundImage", v, ctx)?
         {
-            files::stable_copy(&ctx.assets.join(rel), &ctx.data_dir.join("terminal"))?;
+            files::stable_copy(&src, &ctx.data_dir.join("terminal"))?;
         }
         write_settings(&path, &doc, &ctx.data_dir)?;
         Ok(changes)
@@ -442,11 +445,24 @@ mod tests {
     }
 
     #[test]
-    fn asset_detection() {
-        assert!(is_asset("terminal/background.png"));
-        assert!(!is_asset("desktopWallpaper"));
-        assert!(!is_asset(r"C:\\pics\\a.png"));
-        assert!(!is_asset("ms-appdata:///local/a.png"));
+    fn rejects_background_outside_the_setup() {
+        let ctx = Ctx {
+            assets: "assets".into(),
+            data_dir: "data".into(),
+        };
+        for bad in [
+            r"\\evil\share\bg.png",
+            r"C:\pics\bg.png",
+            "ms-appdata:///local/bg.png",
+        ] {
+            assert!(background("backgroundImage", &Value::String(bad.into()), &ctx).is_err());
+        }
+        let wallpaper = Value::String("desktopWallpaper".into());
+        assert!(
+            background("backgroundImage", &wallpaper, &ctx)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]

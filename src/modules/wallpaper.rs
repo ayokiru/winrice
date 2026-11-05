@@ -43,13 +43,7 @@ fn ext(path: &Path) -> String {
 
 fn asset_path(section: &Table, ctx: &Ctx) -> Result<Option<PathBuf>> {
     match section.get("file") {
-        Some(Value::String(f)) => {
-            let p = ctx.assets.join(f);
-            if !p.is_file() {
-                bail!("wallpaper file {} not found", p.display());
-            }
-            Ok(Some(p))
-        }
+        Some(Value::String(f)) => files::asset(ctx, f).map(Some),
         Some(v) => bail!("wallpaper.file: expected a file name, got {v}"),
         None => Ok(None),
     }

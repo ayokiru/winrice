@@ -3,7 +3,7 @@
 
 use super::{Change, Ctx, Module, files, terminal};
 use crate::sys::{RegValue, System};
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml::{Table, Value};
@@ -122,11 +122,7 @@ fn assets(section: &Table, ctx: &Ctx) -> Result<Vec<PathBuf>> {
             let Some(rel) = v.as_str() else {
                 bail!("fonts.files: expected a file name, got {v}");
             };
-            let p = ctx.assets.join(rel);
-            if !p.is_file() {
-                bail!("font {} not found", p.display());
-            }
-            Ok(p)
+            files::asset(ctx, rel).context("fonts.files")
         })
         .collect()
 }
