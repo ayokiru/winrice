@@ -6,7 +6,6 @@ use anyhow::{Context, Result, bail};
 use serde_json::{Map, Value as J};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 use toml::{Table, Value};
 
 const SETTINGS: &[&str] = &[
@@ -316,16 +315,7 @@ fn compute(doc: &J, section: &Table, ctx: &Ctx) -> Result<(J, Vec<Change>)> {
     Ok((doc, changes))
 }
 
-fn write_settings(path: &Path, doc: &J, data_dir: &Path) -> Result<()> {
-    // Raw copy first: rewriting drops comments.
-    let backups = data_dir.join("terminal");
-    fs::create_dir_all(&backups)?;
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    fs::copy(path, backups.join(format!("settings-{t}.json")))?;
-
+fn write_settings(path: &Path, doc: &J) -> Result<()> {
     let mut buf = Vec::new();
     let fmt = serde_json::ser::PrettyFormatter::with_indent(b"    ");
     let mut ser = serde_json::Serializer::with_formatter(&mut buf, fmt);
@@ -450,7 +440,7 @@ impl Module for Terminal {
         {
             files::stable_copy(&src, &ctx.data_dir.join("terminal"))?;
         }
-        write_settings(&path, &doc, &ctx.data_dir)?;
+        write_settings(&path, &doc)?;
         Ok(changes)
     }
 }
@@ -566,7 +556,6 @@ mod tests {
         assert!(doc["profiles"]["list"][1].get("colorScheme").is_none());
         assert_eq!(doc["schemes"].as_array().unwrap().len(), 2);
         assert!(Terminal.plan(&sys, &section, &ctx).unwrap().is_empty());
-        assert_eq!(fs::read_dir(root.join("data/terminal")).unwrap().count(), 1);
         fs::remove_dir_all(root).unwrap();
     }
 
