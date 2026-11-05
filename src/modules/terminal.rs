@@ -186,6 +186,23 @@ fn is_asset(v: &str) -> bool {
 }
 
 /// Builds the updated settings document and the list of changes.
+/// Font faces used by the current Terminal look.
+pub fn font_faces(sys: &dyn System) -> Vec<String> {
+    let Some(doc) = settings_path(sys).and_then(|p| load(&p).ok()) else {
+        return Vec::new();
+    };
+    let profile = effective_profile(&doc);
+    let face = profile
+        .get("font")
+        .and_then(|f| f["face"].as_str())
+        .unwrap_or_default();
+    face.split(',')
+        .map(str::trim)
+        .filter(|f| !f.is_empty())
+        .map(String::from)
+        .collect()
+}
+
 fn set(changes: &mut Vec<Change>, slot: &mut J, key: String, new: J) {
     if *slot != new {
         changes.push(Change {
