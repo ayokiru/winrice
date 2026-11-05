@@ -47,6 +47,9 @@ dark_apps = true
 dark_system = true
 transparency = true
 
+[accent]
+color = "#E81123"     # a full captured palette is used as is when present
+
 [taskbar]
 alignment = "left"
 search = "icon"
@@ -78,6 +81,7 @@ Custom color schemes and themes used by the setup are stored next to it. Windows
 | Module      | What it covers                                   |
 |-------------|--------------------------------------------------|
 | `theme`     | Dark/light mode, transparency, accent usage      |
+| `accent`    | Accent color with its palette, or from wallpaper |
 | `taskbar`   | Alignment, search box, task view button          |
 | `explorer`  | File extensions, hidden files, compact view      |
 | `wallpaper` | Wallpaper image and fit style                    |
@@ -85,7 +89,7 @@ Custom color schemes and themes used by the setup are stored next to it. Windows
 | `fonts`     | Fonts the setup needs, installed without admin   |
 | `terminal`  | Windows Terminal theme, font, colors, background |
 
-Planned: accent color, apps via winget, setup gallery.
+Planned: apps via winget, setup gallery.
 
 ## License
 
