@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/ayokiru/winrice/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/ayokiru/winrice/ci.yml?branch=main&style=flat-square&label=build&labelColor=1a1b26&color=9ece6a"></a>
+  <a href="https://github.com/ayokiru/winrice/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ayokiru/winrice?style=flat-square&label=release&labelColor=1a1b26&color=7aa2f7"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/windows-10%20%7C%2011-bb9af7?style=flat-square&labelColor=1a1b26">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ff7aa8?style=flat-square&labelColor=1a1b26"></a>
 </p>
