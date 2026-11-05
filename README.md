@@ -8,8 +8,8 @@
 <h3 align="center">Dotfiles for your Windows look</h3>
 
 <p align="center">
-  Capture your wallpaper, theme, accent, taskbar, cursors, fonts and Windows Terminal<br>
-  into one small folder. Share it on GitHub. Apply anyone's setup with one command.
+  winrice saves your wallpaper, theme, accent, taskbar, cursors, fonts and Windows Terminal<br>
+  into a small folder you can put on GitHub, and applies anyone's setup with one command.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 <br>
 
 > [!NOTE]
-> winrice is in early development. Every apply is backed up and `winrice rollback` restores your previous look, but expect rough edges.
+> winrice is in early development and has rough edges. It backs up your settings before every apply, so `winrice rollback` can restore your previous look.
 
 ## Install
 
@@ -80,15 +80,16 @@ winrice apply you/tokyo-night
 
 Run `winrice modules` to see the list your version supports.
 
-## Safe by design
+## Safety and backups
 
-- **You see everything first.** winrice lists every change and asks before touching anything.
-- **One step back, always.** Your current state is backed up before each apply; `winrice rollback` restores it.
-- **Settings, not scripts.** A setup is a TOML file plus images, cursors and fonts. It cannot run commands, and only the modules above can change anything.
-- **Your files stay yours.** Applied wallpapers, cursors and fonts are copied into `%LOCALAPPDATA%\winrice`, and Windows Terminal's `settings.json` is backed up before it is rewritten.
+winrice lists every change and asks before it applies anything. Before each apply it backs up the settings it is about to change, and `winrice rollback` restores them.
+
+A setup is a TOML file plus images, cursors and fonts. It cannot run commands, and only the modules listed above can change your system.
+
+Applied wallpapers and cursors are copied into `%LOCALAPPDATA%\winrice` and fonts into your user fonts folder, so you can delete the setup folder afterwards. winrice also keeps a copy of Windows Terminal's `settings.json` before rewriting it.
 
 <details>
-<summary><b>The setup format</b></summary>
+<summary>The setup format</summary>
 <br>
 
 A setup is a folder with `setup.toml` and an `assets/` directory. Capture one to get a complete example, or write it by hand:
@@ -141,7 +142,7 @@ Every section is optional. Keys a module does not know are skipped with a warnin
 </details>
 
 <details>
-<summary><b>Build from source</b></summary>
+<summary>Build from source</summary>
 <br>
 
 ```powershell
@@ -150,7 +151,7 @@ cd winrice
 cargo build --release
 ```
 
-Tests run on any OS: modules talk to Windows through a thin layer that is mocked in tests.
+Tests run on any OS because modules reach Windows through a thin layer that the tests replace with a mock.
 
 ```powershell
 cargo test
