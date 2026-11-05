@@ -197,6 +197,21 @@ pub fn font_faces(sys: &dyn System) -> Vec<String> {
         .collect()
 }
 
+const RESTORE: &str = "restore";
+const RESTORE_FILE: &str = "terminal/settings.json";
+
+/// Backups carry a full settings.json copy: (live file, copy to put back).
+fn restore(sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Option<(PathBuf, PathBuf)>> {
+    let Some(v) = section.get(RESTORE) else {
+        return Ok(None);
+    };
+    let Some(rel) = v.as_str() else {
+        bail!("terminal.{RESTORE}: expected a file name, got {v}");
+    };
+    let src = files::asset(ctx, rel)?;
+    Ok(settings_path(sys).map(|path| (path, src)))
+}
+
 /// Setup file to use as the background; only setup files or "desktopWallpaper" are allowed.
 fn background(key: &str, v: &Value, ctx: &Ctx) -> Result<Option<PathBuf>> {
     if key != "backgroundImage" {
@@ -377,7 +392,30 @@ impl Module for Terminal {
         Ok(t)
     }
 
+    /// The whole file, so rollback restores every profile and the comments too.
+    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+        let mut t = Table::new();
+        if let Some(path) = settings_path(sys) {
+            fs::create_dir_all(ctx.assets.join("terminal"))?;
+            fs::copy(&path, ctx.assets.join(RESTORE_FILE))?;
+            t.insert(RESTORE.into(), Value::String(RESTORE_FILE.into()));
+        }
+        Ok(t)
+    }
+
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
+        if let Some((path, src)) = restore(sys, section, ctx)? {
+            let same = files::same_content(&path, &src);
+            return Ok(if same {
+                Vec::new()
+            } else {
+                vec![Change {
+                    key: "settings.json".into(),
+                    from: None,
+                    to: "restored".into(),
+                }]
+            });
+        }
         let Some(path) = settings_path(sys) else {
             crate::ui::warn(format_args!(
                 "Windows Terminal settings not found, terminal skipped"
@@ -388,6 +426,13 @@ impl Module for Terminal {
     }
 
     fn apply(&self, sys: &mut dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
+        if let Some((path, src)) = restore(sys, section, ctx)? {
+            let changes = self.plan(sys, section, ctx)?;
+            if !changes.is_empty() {
+                fs::copy(&src, &path)?;
+            }
+            return Ok(changes);
+        }
         let Some(path) = settings_path(sys) else {
             crate::ui::warn(format_args!(
                 "Windows Terminal settings not found, terminal skipped"
@@ -522,6 +567,26 @@ mod tests {
         assert_eq!(doc["schemes"].as_array().unwrap().len(), 2);
         assert!(Terminal.plan(&sys, &section, &ctx).unwrap().is_empty());
         assert_eq!(fs::read_dir(root.join("data/terminal")).unwrap().count(), 1);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn backup_restores_file_exactly() {
+        let (root, mut sys, settings) = setup_env("restore");
+        let ctx = Ctx {
+            assets: root.join("backup"),
+            data_dir: root.join("data"),
+        };
+        let backup = Terminal.backup(&sys, &ctx).unwrap();
+        let section: Table = toml::from_str("[defaults]\ncolorScheme = \"Tokyo\"").unwrap();
+        let apply_ctx = Ctx {
+            assets: root.join("assets"),
+            data_dir: root.join("data"),
+        };
+        Terminal.apply(&mut sys, &section, &apply_ctx).unwrap();
+        assert_ne!(fs::read_to_string(&settings).unwrap(), SAMPLE);
+        assert_eq!(Terminal.apply(&mut sys, &backup, &ctx).unwrap().len(), 1);
+        assert_eq!(fs::read_to_string(&settings).unwrap(), SAMPLE);
         fs::remove_dir_all(root).unwrap();
     }
 }
