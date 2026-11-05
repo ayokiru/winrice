@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="winrice apply output: downloads a setup from GitHub, lists 7 changes, applies them" width="900" height="700" viewBox="0 0 900 700">
+  <style>
+    text { font-family: 'Cascadia Code', 'Cascadia Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace; font-size: 14.5px; fill: #C0CAF5; white-space: pre; animation: in .35s ease-out both; }
+    .prompt { fill: #7AA2F7; } .path { fill: #BB9AF7; } .cmd { fill: #E0E6FF; font-weight: 600; }
+    .dim { fill: #8089B0; } .bold { font-weight: 700; fill: #E0E6FF; } .title { font-weight: 700; fill: #7DCFFF; }
+    .red { fill: #F7768E; } .green { fill: #9ECE6A; } .ok { fill: #9ECE6A; font-weight: 700; }
+    .chrome { font-family: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, Inter, sans-serif; font-size: 12.5px; fill: #C0CAF5; animation: none; }
+    @media (prefers-reduced-motion: reduce) { text, .body, .bar { animation: none; } }
+    /* The window starts in Windows' default Campbell scheme and re-themes when the setup is applied. */
+    .body { animation: body .9s ease-in-out 4.5s both; } .bar { animation: bar .9s ease-in-out 4.5s both; }
+    @keyframes body { from { fill: #0C0C0C; } } @keyframes bar { from { fill: #1F1F1F; } }
+    @keyframes in { from { opacity: 0; transform: translateY(4px); } }
+  </style>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".35"/></filter>
+  </defs>
+  <rect class="body" x="1" y="1" width="898" height="698" rx="12" fill="#1A1B26" stroke="#2F3549" stroke-width="1.5"/>
+  <path class="bar" d="M1 13a12 12 0 0 1 12-12h874a12 12 0 0 1 12 12v27H1z" fill="#16161E"/>
+  <path class="body" d="M12 40v-23a8 8 0 0 1 8-8h176a8 8 0 0 1 8 8v23z" fill="#1A1B26"/>
+  <rect x="24" y="19" width="14" height="14" rx="3" fill="#7AA2F7"/>
+  <path d="M28 23l3 3-3 3M32 29h3" stroke="#1A1B26" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <text class="chrome" x="46" y="30">Windows PowerShell</text>
+  <text class="chrome" x="182" y="30" style="fill:#8089B0">✕</text>
+  <text class="chrome" x="218" y="31" style="font-size:16px;fill:#8089B0">+</text>
+  <g stroke="#9AA5CE" stroke-width="1.1" fill="none">
+    <path d="M778 22h10"/>
+    <rect x="822" y="17" width="10" height="10" rx="1.5"/>
+    <path d="M866 17l10 10M876 17l-10 10"/>
+  </g>
+    <text x="28" y="76" style="animation-delay:0.20s"><tspan class="prompt">PS </tspan><tspan class="path">~</tspan><tspan class="prompt">&gt; </tspan><tspan class="cmd">winrice apply ayokiru/tokyo-night</tspan></text>
+  <text x="28" y="98" style="animation-delay:1.30s"><tspan class="dim">Downloading github.com/ayokiru/tokyo-night...</tspan></text>
+  <text x="28" y="120" style="animation-delay:1.42s"><tspan class="title">tokyo-night</tspan><tspan class="dim"> by </tspan><tspan class="bold">ayokiru</tspan><tspan class="dim"> from github.com/ayokiru/tokyo-night</tspan></text>
+  <text x="28" y="142" style="animation-delay:1.54s"><tspan class="dim">Dark, minimal, left taskbar</tspan></text>
+  <text x="28" y="186" style="animation-delay:2.14s"><tspan class="bold">theme</tspan></text>
+  <text x="28" y="208" style="animation-delay:2.26s"><tspan>  dark_apps     </tspan><tspan class="red">false</tspan><tspan class="dim"> → </tspan><tspan class="green">true</tspan></text>
+  <text x="28" y="230" style="animation-delay:2.38s"><tspan>  transparency  </tspan><tspan class="red">false</tspan><tspan class="dim"> → </tspan><tspan class="green">true</tspan></text>
+  <text x="28" y="274" style="animation-delay:2.50s"><tspan class="bold">accent</tspan></text>
+  <text x="28" y="296" style="animation-delay:2.62s"><tspan>  color  </tspan><tspan class="red">&quot;#0078D4&quot;</tspan><tspan class="dim"> → </tspan><tspan class="green">&quot;#7AA2F7&quot;</tspan></text>
+  <text x="28" y="340" style="animation-delay:2.74s"><tspan class="bold">taskbar</tspan></text>
+  <text x="28" y="362" style="animation-delay:2.86s"><tspan>  alignment  </tspan><tspan class="red">&quot;center&quot;</tspan><tspan class="dim"> → </tspan><tspan class="green">&quot;left&quot;</tspan></text>
+  <text x="28" y="406" style="animation-delay:2.98s"><tspan class="bold">wallpaper</tspan></text>
+  <text x="28" y="428" style="animation-delay:3.10s"><tspan>  file  </tspan><tspan class="red">C:\Windows\Web\4K\img0.jpg</tspan><tspan class="dim"> → </tspan><tspan class="green">&quot;wallpaper.jpg&quot;</tspan></text>
+  <text x="28" y="472" style="animation-delay:3.22s"><tspan class="bold">terminal</tspan></text>
+  <text x="28" y="494" style="animation-delay:3.34s"><tspan>  defaults.colorScheme  </tspan><tspan class="red">&quot;Campbell&quot;</tspan><tspan class="dim"> → </tspan><tspan class="green">&quot;Tokyo Night&quot;</tspan></text>
+  <text x="28" y="538" style="animation-delay:3.46s"><tspan class="bold">fonts</tspan></text>
+  <text x="28" y="560" style="animation-delay:3.58s"><tspan>  JetBrainsMono-Regular.ttf  </tspan><tspan class="dim">none</tspan><tspan class="dim"> → </tspan><tspan class="green">installed</tspan></text>
+  <text x="28" y="604" style="animation-delay:3.70s"><tspan>Apply 7 changes? [y/N] </tspan><tspan class="cmd">y</tspan></text>
+  <text x="28" y="626" style="animation-delay:4.60s"><tspan class="ok">✓ </tspan><tspan>Applied tokyo-night (7 changes)</tspan></text>
+  <text x="28" y="648" style="animation-delay:4.72s"><tspan class="dim">Undo anytime with `winrice rollback`</tspan></text>
+</svg>

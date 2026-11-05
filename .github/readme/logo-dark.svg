@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="120" viewBox="0 0 420 120" role="img" aria-label="winrice">
+  <defs>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8AC6"/><stop offset="1" stop-color="#FF5F8F"/></linearGradient>
+    <linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B69CFF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient>
+    <linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DF0FF"/><stop offset="1" stop-color="#3BA9FF"/></linearGradient>
+    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="232" y1="0" x2="372" y2="0"><stop offset="0" stop-color="#FF6FA8"/><stop offset=".5" stop-color="#9B7BFF"/><stop offset="1" stop-color="#4FC3FF"/></linearGradient>
+  </defs>
+  <g transform="translate(62 102)" stroke="#0D1117" stroke-width="3">
+    <rect x="-19" y="-82" width="38" height="78" rx="9" fill="url(#c)" transform="rotate(22)"/>
+    <rect x="-19" y="-82" width="38" height="78" rx="9" fill="url(#v)" transform="rotate(0)"/>
+    <rect x="-19" y="-82" width="38" height="78" rx="9" fill="url(#p)" transform="rotate(-22)"/>
+    <circle r="4.5" cy="-14" fill="#0D1117" stroke="none"/>
+  </g>
+  <text x="122" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="68" font-weight="700" letter-spacing="-2.5" fill="#F0F6FC">win<tspan fill="url(#w)">rice</tspan></text>
+</svg>
