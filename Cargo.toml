@@ -1,0 +1,23 @@
+[package]
+name = "winrice"
+version = "0.1.0"
+edition = "2024"
+description = "Capture, share and apply your whole Windows look with one command"
+license = "MIT"
+repository = "https://github.com/ayokiru/winrice"
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.2.0"
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+winreg = "0.56.0"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
