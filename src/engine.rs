@@ -42,14 +42,14 @@ pub fn capture(
     only: &[String],
     data_dir: &Path,
 ) -> Result<Setup> {
-    save(sys, out, name, select(only)?, data_dir, false)
+    save(sys, out, name, &select(only)?, data_dir, false)
 }
 
 fn save(
     sys: &dyn System,
     out: &Path,
     name: &str,
-    modules: Vec<Box<dyn Module>>,
+    modules: &[Box<dyn Module>],
     data_dir: &Path,
     backup: bool,
 ) -> Result<Setup> {
@@ -76,18 +76,16 @@ fn save(
     Ok(setup)
 }
 
-fn known_sections(setup: &Setup) -> Vec<String> {
-    let names: Vec<String> = setup.sections.keys().cloned().collect();
-    for n in &names {
-        if modules::find(n).is_none() {
-            crate::ui::warn(format_args!(
-                "module \"{n}\" is not supported by this version, skipped"
-            ));
-        }
+/// The setup's modules in run order; unknown sections are skipped with a warning.
+fn setup_modules(setup: &Setup) -> Vec<Box<dyn Module>> {
+    for n in setup.sections.keys().filter(|n| modules::find(n).is_none()) {
+        crate::ui::warn(format_args!(
+            "module \"{n}\" is not supported by this version, skipped"
+        ));
     }
-    names
+    modules::all()
         .into_iter()
-        .filter(|n| modules::find(n).is_some())
+        .filter(|m| setup.sections.contains_key(m.name()))
         .collect()
 }
 
@@ -99,7 +97,7 @@ pub fn plan(
 ) -> Result<Vec<(String, Vec<Change>)>> {
     let ctx = ctx(dir, data_dir);
     let mut out = Vec::new();
-    for m in select(&known_sections(setup))? {
+    for m in setup_modules(setup) {
         let changes = m.plan(sys, &setup.sections[m.name()], &ctx)?;
         out.push((m.name().to_string(), changes));
     }
@@ -113,15 +111,15 @@ pub fn apply(
     data_dir: &Path,
     backup: bool,
 ) -> Result<Vec<(String, Vec<Change>)>> {
-    let names = known_sections(setup);
+    let modules = setup_modules(setup);
     if backup {
         let path = data_dir.join("backups").join(timestamp());
-        save(sys, &path, "backup", select(&names)?, data_dir, true)?;
+        save(sys, &path, "backup", &modules, data_dir, true)?;
         prune_backups(data_dir)?;
     }
     let ctx = ctx(dir, data_dir);
     let mut out = Vec::new();
-    for m in select(&names)? {
+    for m in &modules {
         let changes = m.apply(sys, &setup.sections[m.name()], &ctx)?;
         out.push((m.name().to_string(), changes));
     }
