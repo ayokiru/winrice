@@ -364,7 +364,10 @@ impl Module for Terminal {
         }
 
         let schemes = scheme_names(profile.get("colorScheme"));
-        if let Some(defaults) = json_to_toml(&J::Object(profile)) {
+        // A stock Terminal has nothing to share: skip the empty table.
+        if let Some(defaults) = json_to_toml(&J::Object(profile))
+            .filter(|v| v.as_table().is_some_and(|t| !t.is_empty()))
+        {
             t.insert("defaults".into(), defaults);
         }
         let custom: Vec<Value> = find_named(&doc, "schemes", &schemes)
