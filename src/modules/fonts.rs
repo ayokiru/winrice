@@ -127,6 +127,13 @@ fn assets(section: &Table, ctx: &Ctx) -> Result<Vec<PathBuf>> {
         .collect()
 }
 
+/// Setup fonts that are not installed yet.
+fn missing(sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<PathBuf>> {
+    let mut list = assets(section, ctx)?;
+    list.retain(|a| !is_installed(sys, a));
+    Ok(list)
+}
+
 impl Module for Fonts {
     fn name(&self) -> &'static str {
         "fonts"
@@ -166,9 +173,8 @@ impl Module for Fonts {
     }
 
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>> {
-        Ok(assets(section, ctx)?
+        Ok(missing(sys, section, ctx)?
             .iter()
-            .filter(|a| !is_installed(sys, a))
             .map(|a| Change {
                 key: file_name(a),
                 from: None,
@@ -186,12 +192,12 @@ impl Module for Fonts {
             bail!("LOCALAPPDATA is not set");
         };
         fs::create_dir_all(&dir)?;
-        for c in &changes {
-            let src = ctx.assets.join("fonts").join(&c.key);
-            let dest = dir.join(&c.key);
+        for src in missing(sys, section, ctx)? {
+            let name = file_name(&src);
+            let dest = dir.join(&name);
             fs::copy(&src, &dest)?;
             let stem = dest.file_stem().unwrap_or_default().to_string_lossy();
-            let kind = if c.key.to_ascii_lowercase().ends_with(".otf") {
+            let kind = if name.to_ascii_lowercase().ends_with(".otf") {
                 "OpenType"
             } else {
                 "TrueType"
@@ -208,6 +214,27 @@ impl Module for Fonts {
 mod tests {
     use super::*;
     use crate::sys::mock::MockSystem;
+
+    #[test]
+    fn installs_fonts_listed_outside_fonts_folder() {
+        let root = std::env::temp_dir().join(format!("winrice-fonts-root-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("assets")).unwrap();
+        fs::write(root.join("assets/Hand.ttf"), b"font").unwrap();
+        let ctx = Ctx {
+            assets: root.join("assets"),
+            data_dir: root.join("data"),
+        };
+        let section: Table = toml::from_str("files = [\"Hand.ttf\"]").unwrap();
+        let mut sys =
+            MockSystem::default().env("LOCALAPPDATA", root.join("local").to_string_lossy());
+        assert_eq!(Fonts.apply(&mut sys, &section, &ctx).unwrap().len(), 1);
+        assert!(
+            root.join("local/Microsoft/Windows/Fonts/Hand.ttf")
+                .is_file()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn matches_styles_only() {
