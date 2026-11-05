@@ -37,7 +37,24 @@ search = "icon"
 [wallpaper]
 file = "wallpaper.jpg"
 style = "fill"
+
+[cursors]
+size = 48
+arrow = "cursors/arrow.cur"       # shipped with the setup
+text = "system:beam_r.cur"        # from C:\Windows\Cursors
+busy = "default"
+
+[terminal]
+theme = "dark"
+
+[terminal.defaults]
+colorScheme = "Tokyo Night"
+opacity = 85
+font = { face = "CaskaydiaCove Nerd Font", size = 11 }
 ```
+
+Custom color schemes and themes used by the setup are stored next to it. Windows Terminal
+`settings.json` is backed up before every change.
 
 ## Modules
 
@@ -47,8 +64,10 @@ style = "fill"
 | `taskbar`   | Alignment, search box, task view button          |
 | `explorer`  | File extensions, hidden files, compact view      |
 | `wallpaper` | Wallpaper image and fit style                    |
+| `cursors`   | Cursor scheme, custom cursor files, cursor size  |
+| `terminal`  | Windows Terminal theme, font, colors, background |
 
-Planned: accent color, cursors, fonts, Windows Terminal, apps via winget, setup gallery
+Planned: accent color, fonts, apps via winget, setup gallery
 (`winrice apply user/setup`).
 
 ## License
