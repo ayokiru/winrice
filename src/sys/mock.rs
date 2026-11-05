@@ -6,13 +6,20 @@ use std::path::{Path, PathBuf};
 #[derive(Default)]
 pub struct MockSystem {
     pub reg: HashMap<(String, String), RegValue>,
+    pub vars: HashMap<String, String>,
     pub wallpaper: Option<PathBuf>,
     pub notified: usize,
+    pub cursor_reloads: usize,
 }
 
 impl MockSystem {
     pub fn with(mut self, path: &str, name: &str, value: RegValue) -> Self {
         self.reg.insert((path.into(), name.into()), value);
+        self
+    }
+
+    pub fn env(mut self, name: &str, value: impl Into<String>) -> Self {
+        self.vars.insert(name.into(), value.into());
         self
     }
 }
@@ -36,8 +43,17 @@ impl System for MockSystem {
         Ok(())
     }
 
+    fn reload_cursors(&mut self) -> Result<()> {
+        self.cursor_reloads += 1;
+        Ok(())
+    }
+
     fn notify_changed(&mut self) -> Result<()> {
         self.notified += 1;
         Ok(())
+    }
+
+    fn env(&self, name: &str) -> Option<String> {
+        self.vars.get(name).cloned()
     }
 }

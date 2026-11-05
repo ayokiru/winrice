@@ -4,8 +4,9 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    HWND_BROADCAST, SMTO_ABORTIFHUNG, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE,
-    SPIF_UPDATEINIFILE, SendMessageTimeoutW, SystemParametersInfoW, WM_SETTINGCHANGE,
+    HWND_BROADCAST, SMTO_ABORTIFHUNG, SPI_GETDESKWALLPAPER, SPI_SETCURSORS, SPI_SETDESKWALLPAPER,
+    SPIF_SENDCHANGE, SPIF_UPDATEINIFILE, SendMessageTimeoutW, SystemParametersInfoW,
+    WM_SETTINGCHANGE,
 };
 use winreg::RegKey;
 use winreg::enums::HKEY_CURRENT_USER;
@@ -88,6 +89,21 @@ impl System for WinSystem {
         };
         if ok == 0 {
             bail!("cannot set wallpaper {}", path.display());
+        }
+        Ok(())
+    }
+
+    fn reload_cursors(&mut self) -> Result<()> {
+        let ok = unsafe {
+            SystemParametersInfoW(
+                SPI_SETCURSORS,
+                0,
+                std::ptr::null_mut(),
+                SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
+            )
+        };
+        if ok == 0 {
+            bail!("cannot reload cursors");
         }
         Ok(())
     }

@@ -22,8 +22,13 @@ pub trait System {
     fn reg_set(&mut self, path: &str, name: &str, value: &RegValue) -> Result<()>;
     fn wallpaper(&self) -> Result<Option<PathBuf>>;
     fn set_wallpaper(&mut self, path: &Path) -> Result<()>;
+    /// Makes Windows reload cursors from the registry.
+    fn reload_cursors(&mut self) -> Result<()>;
     /// Tells running apps (Explorer, taskbar) to reload settings.
     fn notify_changed(&mut self) -> Result<()>;
+    fn env(&self, name: &str) -> Option<String> {
+        std::env::var(name).ok()
+    }
 }
 
 #[cfg(windows)]

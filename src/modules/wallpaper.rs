@@ -1,4 +1,4 @@
-use super::{Change, Ctx, Module};
+use super::{Change, Ctx, Module, files};
 use crate::sys::{RegValue, System};
 use anyhow::{Context, Result, bail};
 use std::fs;
@@ -36,19 +36,9 @@ fn current_style(sys: &dyn System) -> Result<Option<&'static str>> {
         .map(|(n, ..)| *n))
 }
 
-/// FNV-1a, only used to name applied wallpaper copies.
-fn hash(bytes: &[u8]) -> u64 {
-    bytes.iter().fold(0xcbf29ce484222325, |h, b| {
-        (h ^ *b as u64).wrapping_mul(0x100000001b3)
-    })
-}
-
 fn ext(path: &Path) -> String {
-    match path.extension().and_then(|e| e.to_str()) {
-        Some(e) => e.to_ascii_lowercase(),
-        // TranscodedWallpaper has no extension and is a JPEG.
-        None => "jpg".into(),
-    }
+    // TranscodedWallpaper has no extension and is a JPEG.
+    files::ext(path, "jpg")
 }
 
 fn asset_path(section: &Table, ctx: &Ctx) -> Result<Option<PathBuf>> {
@@ -93,10 +83,9 @@ impl Module for Wallpaper {
         let mut changes = Vec::new();
         if let Some(asset) = asset_path(section, ctx)? {
             let current = sys.wallpaper()?;
-            let same = match &current {
-                Some(c) => fs::read(c).ok() == Some(fs::read(&asset)?),
-                None => false,
-            };
+            let same = current
+                .as_ref()
+                .is_some_and(|c| files::same_content(c, &asset));
             if !same {
                 changes.push(Change {
                     key: "file".into(),
@@ -133,17 +122,11 @@ impl Module for Wallpaper {
         }
         // Setting the image (even the same one) makes Windows pick up the new style.
         let image = match asset_path(section, ctx)? {
-            Some(asset) => {
-                // Keep a stable copy so the setup folder can be deleted later.
-                let bytes = fs::read(&asset)?;
-                let dir = ctx.data_dir.join("wallpapers");
-                fs::create_dir_all(&dir)?;
-                let dest = dir.join(format!("{:016x}.{}", hash(&bytes), ext(&asset)));
-                if !dest.exists() {
-                    fs::write(&dest, &bytes)?;
-                }
-                Some(dest)
-            }
+            // Keep a stable copy so the setup folder can be deleted later.
+            Some(asset) => Some(files::stable_copy(
+                &asset,
+                &ctx.data_dir.join("wallpapers"),
+            )?),
             None => sys.wallpaper()?,
         };
         if let Some(image) = image {
