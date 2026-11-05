@@ -5,7 +5,7 @@ mod source;
 mod sys;
 mod ui;
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use source::Source;
 use std::io::Write;
@@ -175,7 +175,8 @@ fn run(cli: Cli) -> Result<()> {
             if !yes && !confirm(&format!("Apply {}?", plural(n, "change")))? {
                 bail!("cancelled");
             }
-            let results = engine::apply(sys.as_mut(), &s, dir, &data_dir, true)?;
+            let results = engine::apply(sys.as_mut(), &s, dir, &data_dir, true)
+                .context("apply stopped partway, run `winrice rollback` to undo what changed")?;
             let n: usize = results.iter().map(|(_, c)| c.len()).sum();
             ui::success(format_args!(
                 "Applied {} ({})",
