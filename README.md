@@ -65,9 +65,10 @@ Custom color schemes and themes used by the setup are stored next to it. Windows
 | `explorer`  | File extensions, hidden files, compact view      |
 | `wallpaper` | Wallpaper image and fit style                    |
 | `cursors`   | Cursor scheme, custom cursor files, cursor size  |
+| `fonts`     | Fonts the setup needs, installed without admin   |
 | `terminal`  | Windows Terminal theme, font, colors, background |
 
-Planned: accent color, fonts, apps via winget, setup gallery
+Planned: accent color, apps via winget, setup gallery
 (`winrice apply user/setup`).
 
 ## License
