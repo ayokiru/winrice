@@ -158,17 +158,19 @@ impl Module for Accent {
                     let p = target_palette(section)?.unwrap();
                     let bytes = p.iter().flat_map(|c| [c[0], c[1], c[2], 0]).collect();
                     sys.reg_set(ACCENT, "AccentPalette", &RegValue::Binary(bytes))?;
+                    // Checked on Windows 11: menu and DWM accent = base, Start = dark1.
                     sys.reg_set(
                         ACCENT,
                         "AccentColorMenu",
-                        &RegValue::Dword(abgr(p[4], 0xFF)),
+                        &RegValue::Dword(abgr(p[3], 0xFF)),
                     )?;
-                    sys.reg_set(ACCENT, "StartColorMenu", &RegValue::Dword(abgr(p[5], 0xFF)))?;
-                    sys.reg_set(DWM, "AccentColor", &RegValue::Dword(abgr(p[4], 0xFF)))?;
+                    sys.reg_set(ACCENT, "StartColorMenu", &RegValue::Dword(abgr(p[4], 0xFF)))?;
+                    sys.reg_set(DWM, "AccentColor", &RegValue::Dword(abgr(p[3], 0xFF)))?;
                     let colorization = RegValue::Dword(argb(p[3], 0xC4));
                     sys.reg_set(DWM, "ColorizationColor", &colorization)?;
                     sys.reg_set(DWM, "ColorizationAfterglow", &colorization)?;
-                    if section.get("auto").is_none() {
+                    // Only turn off accent-from-wallpaper; a missing value already means off.
+                    if section.get("auto").is_none() && current_auto(sys)? == Some(true) {
                         sys.reg_set(DESKTOP, "AutoColorization", &RegValue::Dword(0))?;
                     }
                 }
@@ -212,10 +214,17 @@ mod tests {
             target.reg_get(ACCENT, "AccentPalette").unwrap(),
             Some(RegValue::Binary(DEFAULT.to_vec()))
         );
-        // Matches what Windows itself stores for the default blue.
         assert_eq!(
             target.reg_get(ACCENT, "AccentColorMenu").unwrap(),
+            Some(RegValue::Dword(0xFFD47800))
+        );
+        assert_eq!(
+            target.reg_get(ACCENT, "StartColorMenu").unwrap(),
             Some(RegValue::Dword(0xFFC06700))
+        );
+        assert_eq!(
+            target.reg_get(DWM, "AccentColor").unwrap(),
+            Some(RegValue::Dword(0xFFD47800))
         );
         assert_eq!(
             target.reg_get(DWM, "ColorizationColor").unwrap(),
@@ -252,5 +261,13 @@ mod tests {
                 .map(|t| target_palette(&t).is_err())
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn missing_auto_colorization_stays_missing() {
+        let section: Table = toml::from_str("color = \"#e81123\"").unwrap();
+        let mut sys = MockSystem::default();
+        Accent.apply(&mut sys, &section, &ctx()).unwrap();
+        assert_eq!(sys.reg_get(DESKTOP, "AutoColorization").unwrap(), None);
     }
 }
