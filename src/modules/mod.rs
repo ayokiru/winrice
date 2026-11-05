@@ -1,3 +1,4 @@
+mod accent;
 mod cursors;
 mod files;
 mod fonts;
@@ -36,6 +37,7 @@ pub trait Module {
 pub fn all() -> Vec<Box<dyn Module>> {
     vec![
         Box::new(registry::theme()),
+        Box::new(accent::Accent),
         Box::new(registry::taskbar()),
         Box::new(registry::explorer()),
         Box::new(wallpaper::Wallpaper),
