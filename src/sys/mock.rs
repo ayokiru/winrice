@@ -10,6 +10,7 @@ pub struct MockSystem {
     pub wallpaper: Option<PathBuf>,
     pub notified: usize,
     pub cursor_reloads: usize,
+    pub fonts: Vec<PathBuf>,
 }
 
 impl MockSystem {
@@ -29,6 +30,26 @@ impl System for MockSystem {
         Ok(self.reg.get(&(path.into(), name.into())).cloned())
     }
 
+    /// HKLM entries are stored with an `HKLM\\` path prefix.
+    fn reg_list(&self, machine: bool, path: &str) -> Result<Vec<(String, String)>> {
+        let path = if machine {
+            format!("HKLM\\{path}")
+        } else {
+            path.to_string()
+        };
+        let mut out: Vec<_> = self
+            .reg
+            .iter()
+            .filter(|((p, _), _)| *p == path)
+            .filter_map(|((_, n), v)| match v {
+                RegValue::Str(s) => Some((n.clone(), s.clone())),
+                RegValue::Dword(_) => None,
+            })
+            .collect();
+        out.sort();
+        Ok(out)
+    }
+
     fn reg_set(&mut self, path: &str, name: &str, value: &RegValue) -> Result<()> {
         self.reg.insert((path.into(), name.into()), value.clone());
         Ok(())
@@ -45,6 +66,11 @@ impl System for MockSystem {
 
     fn reload_cursors(&mut self) -> Result<()> {
         self.cursor_reloads += 1;
+        Ok(())
+    }
+
+    fn load_font(&mut self, path: &Path) -> Result<()> {
+        self.fonts.push(path.to_path_buf());
         Ok(())
     }
 

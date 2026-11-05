@@ -3,13 +3,14 @@ use anyhow::{Context, Result, bail};
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use windows_sys::Win32::Graphics::Gdi::AddFontResourceW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     HWND_BROADCAST, SMTO_ABORTIFHUNG, SPI_GETDESKWALLPAPER, SPI_SETCURSORS, SPI_SETDESKWALLPAPER,
-    SPIF_SENDCHANGE, SPIF_UPDATEINIFILE, SendMessageTimeoutW, SystemParametersInfoW,
+    SPIF_SENDCHANGE, SPIF_UPDATEINIFILE, SendMessageTimeoutW, SystemParametersInfoW, WM_FONTCHANGE,
     WM_SETTINGCHANGE,
 };
 use winreg::RegKey;
-use winreg::enums::HKEY_CURRENT_USER;
+use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
 
 pub struct WinSystem {
     hkcu: RegKey,
@@ -36,6 +37,22 @@ impl System for WinSystem {
             return Ok(Some(RegValue::Dword(v)));
         }
         Ok(key.get_value::<String, _>(name).ok().map(RegValue::Str))
+    }
+
+    fn reg_list(&self, machine: bool, path: &str) -> Result<Vec<(String, String)>> {
+        let root = RegKey::predef(if machine {
+            HKEY_LOCAL_MACHINE
+        } else {
+            HKEY_CURRENT_USER
+        });
+        let Ok(key) = root.open_subkey(path) else {
+            return Ok(Vec::new());
+        };
+        Ok(key
+            .enum_values()
+            .filter_map(|v| v.ok())
+            .filter_map(|(name, _)| key.get_value::<String, _>(&name).ok().map(|v| (name, v)))
+            .collect())
     }
 
     fn reg_set(&mut self, path: &str, name: &str, value: &RegValue) -> Result<()> {
@@ -104,6 +121,25 @@ impl System for WinSystem {
         };
         if ok == 0 {
             bail!("cannot reload cursors");
+        }
+        Ok(())
+    }
+
+    fn load_font(&mut self, path: &Path) -> Result<()> {
+        let w = wide(path.as_os_str());
+        if unsafe { AddFontResourceW(w.as_ptr()) } == 0 {
+            bail!("cannot load font {}", path.display());
+        }
+        unsafe {
+            SendMessageTimeoutW(
+                HWND_BROADCAST,
+                WM_FONTCHANGE,
+                0,
+                0,
+                SMTO_ABORTIFHUNG,
+                1000,
+                std::ptr::null_mut(),
+            );
         }
         Ok(())
     }

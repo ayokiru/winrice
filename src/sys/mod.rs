@@ -16,14 +16,18 @@ pub enum RegValue {
     Str(String),
 }
 
-/// All registry paths are relative to HKEY_CURRENT_USER.
+/// Registry paths are relative to HKEY_CURRENT_USER unless stated otherwise.
 pub trait System {
     fn reg_get(&self, path: &str, name: &str) -> Result<Option<RegValue>>;
+    /// String values of a key; `machine` reads HKEY_LOCAL_MACHINE instead.
+    fn reg_list(&self, machine: bool, path: &str) -> Result<Vec<(String, String)>>;
     fn reg_set(&mut self, path: &str, name: &str, value: &RegValue) -> Result<()>;
     fn wallpaper(&self) -> Result<Option<PathBuf>>;
     fn set_wallpaper(&mut self, path: &Path) -> Result<()>;
     /// Makes Windows reload cursors from the registry.
     fn reload_cursors(&mut self) -> Result<()>;
+    /// Loads a font file into the current session.
+    fn load_font(&mut self, path: &Path) -> Result<()>;
     /// Tells running apps (Explorer, taskbar) to reload settings.
     fn notify_changed(&mut self) -> Result<()>;
     fn env(&self, name: &str) -> Option<String> {
