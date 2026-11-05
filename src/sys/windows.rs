@@ -137,16 +137,24 @@ impl System for WinSystem {
     }
 
     fn reload_cursors(&mut self) -> Result<()> {
-        let ok = unsafe {
-            SystemParametersInfoW(
-                SPI_SETCURSORS,
-                0,
-                std::ptr::null_mut(),
-                SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
-            )
-        };
+        // CursorBaseSize is only picked up through this undocumented call (what Settings uses).
+        const SPI_SETCURSORSIZE: u32 = 0x2029;
+        if let Some(RegValue::Dword(size)) =
+            self.reg_get(r"Control Panel\Cursors", "CursorBaseSize")?
+        {
+            unsafe {
+                SystemParametersInfoW(
+                    SPI_SETCURSORSIZE,
+                    0,
+                    size as usize as *mut _,
+                    SPIF_UPDATEINIFILE,
+                )
+            };
+        }
+        // SPI_SETCURSORS reloads the files from the registry; it fails when asked to update the ini file.
+        let ok = unsafe { SystemParametersInfoW(SPI_SETCURSORS, 0, std::ptr::null_mut(), 0) };
         if ok == 0 {
-            bail!("cannot reload cursors");
+            bail!("cannot reload cursors: {}", std::io::Error::last_os_error());
         }
         Ok(())
     }
