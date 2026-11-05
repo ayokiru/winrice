@@ -1,4 +1,7 @@
+mod cursors;
+mod files;
 mod registry;
+mod terminal;
 mod wallpaper;
 
 use crate::sys::System;
@@ -35,6 +38,8 @@ pub fn all() -> Vec<Box<dyn Module>> {
         Box::new(registry::taskbar()),
         Box::new(registry::explorer()),
         Box::new(wallpaper::Wallpaper),
+        Box::new(cursors::Cursors),
+        Box::new(terminal::Terminal),
     ]
 }
 
