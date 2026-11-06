@@ -9,6 +9,8 @@ use toml::{Table, Value};
 
 pub const FILE: &str = "setup.toml";
 pub const ASSETS: &str = "assets";
+/// A top-level `[[name]]` array is kept as section `name` with this key.
+pub const LIST: &str = "list";
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Meta {
@@ -53,6 +55,9 @@ impl Setup {
                 Value::Table(t) => {
                     sections.insert(name, t);
                 }
+                Value::Array(a) if a.iter().all(Value::is_table) => {
+                    sections.insert(name, Table::from_iter([(LIST.into(), Value::Array(a))]));
+                }
                 _ => crate::ui::warn(format_args!(
                     "top-level key \"{name}\" is not a section, skipped"
                 )),
@@ -65,7 +70,11 @@ impl Setup {
         let mut table = Table::new();
         table.insert("meta".into(), Value::try_from(&self.meta)?);
         for (name, section) in &self.sections {
-            table.insert(name.clone(), Value::Table(section.clone()));
+            let value = match section.get(LIST) {
+                Some(list) if section.len() == 1 => list.clone(),
+                _ => Value::Table(section.clone()),
+            };
+            table.insert(name.clone(), value);
         }
         fs::create_dir_all(dir)?;
         fs::write(dir.join(FILE), toml::to_string_pretty(&table)?)?;
@@ -93,6 +102,32 @@ mod tests {
         assert_eq!(
             loaded.sections["taskbar"]["alignment"].as_str(),
             Some("left")
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn keeps_array_of_tables_sections() {
+        let dir = std::env::temp_dir().join(format!("winrice-setup-list-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join(FILE),
+            "[[configs]]
+file = \"a.yaml\"
+to = \"b\"
+",
+        )
+        .unwrap();
+        let s = Setup::load(&dir).unwrap();
+        assert_eq!(
+            s.sections["configs"][LIST][0]["file"].as_str(),
+            Some("a.yaml")
+        );
+        s.save(&dir).unwrap();
+        assert!(
+            fs::read_to_string(dir.join(FILE))
+                .unwrap()
+                .contains("[[configs]]")
         );
         fs::remove_dir_all(dir).unwrap();
     }
