@@ -1,5 +1,6 @@
 mod accent;
 mod apps;
+mod configs;
 mod cursors;
 mod files;
 mod fonts;
@@ -60,6 +61,7 @@ pub fn all() -> Vec<Box<dyn Module>> {
         Box::new(wallpaper::Wallpaper),
         Box::new(cursors::Cursors),
         Box::new(apps::Apps),
+        Box::new(configs::Configs),
         Box::new(fonts::Fonts),
         Box::new(terminal::Terminal),
     ]
