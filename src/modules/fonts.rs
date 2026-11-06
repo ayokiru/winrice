@@ -242,6 +242,46 @@ mod tests {
     }
 
     #[test]
+    fn registers_per_user_font_path_and_kind() {
+        let root = std::env::temp_dir().join(format!("winrice-fonts-reg-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("assets/fonts")).unwrap();
+        fs::write(root.join("assets/fonts/Mono.ttf"), b"ttf").unwrap();
+        fs::write(root.join("assets/fonts/Mono-Bold.otf"), b"otf").unwrap();
+        let ctx = Ctx {
+            assets: root.join("assets"),
+            data_dir: root.join("data"),
+        };
+        let section: Table =
+            toml::from_str(r#"files = ["fonts/Mono.ttf", "fonts/Mono-Bold.otf"]"#).unwrap();
+        let mut sys = MockSystem::default()
+            .env("LOCALAPPDATA", root.join("local").to_string_lossy())
+            .env("SystemRoot", root.join("win").to_string_lossy());
+        Fonts.apply(&mut sys, &section, &ctx).unwrap();
+
+        let dir = root
+            .join("local")
+            .join("Microsoft")
+            .join("Windows")
+            .join("Fonts");
+        let value = |name: &str, file: &str| {
+            assert_eq!(
+                sys.reg_get(FONTS_KEY, name).unwrap(),
+                Some(RegValue::Str(dir.join(file).to_string_lossy().into_owned()))
+            );
+        };
+        value("Mono (TrueType)", "Mono.ttf");
+        value("Mono-Bold (OpenType)", "Mono-Bold.otf");
+        assert_eq!(sys.fonts, [dir.join("Mono.ttf"), dir.join("Mono-Bold.otf")]);
+        assert_eq!(fs::read(dir.join("Mono-Bold.otf")).unwrap(), b"otf");
+        assert!(Fonts.backup(&sys, &section, &ctx).unwrap().is_empty());
+
+        let bad: Table = toml::from_str(r#"files = ['..\evil.ttf']"#).unwrap();
+        assert!(Fonts.plan(&sys, &bad, &ctx).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn matches_styles_only() {
         assert!(entry_matches("Fira Code Regular (TrueType)", "Fira Code"));
         assert!(entry_matches(
