@@ -27,6 +27,9 @@ impl WinSystem {
 
 /// winget's exit code when no installed package matches.
 const NO_APPLICATIONS_FOUND: i32 = 0x8A150014_u32 as i32;
+/// Installed, but a restart is needed to finish (winget's code and the raw installer code).
+const REBOOT_REQUIRED_TO_FINISH: i32 = 0x8A150109_u32 as i32;
+const INSTALLER_REBOOT: i32 = 3010;
 
 /// Runs winget without input; `quiet` hides its output.
 fn winget(args: &[&str], quiet: bool) -> Result<ExitStatus> {
@@ -243,9 +246,36 @@ impl System for WinSystem {
             "--accept-source-agreements",
         ];
         let status = winget(&args, false)?;
-        if !status.success() {
-            bail!("`winget install --id {id}` failed ({status})");
+        match restart_needed(status.code()) {
+            Some(true) => crate::ui::note(format_args!(
+                "{id} is installed, restart Windows to finish its setup"
+            )),
+            Some(false) => {}
+            None => bail!("`winget install --id {id}` failed ({status})"),
         }
         Ok(())
+    }
+}
+
+/// Maps a `winget install` exit code: Some(restart needed) on success, None on failure.
+fn restart_needed(code: Option<i32>) -> Option<bool> {
+    match code {
+        Some(0) => Some(false),
+        Some(REBOOT_REQUIRED_TO_FINISH | INSTALLER_REBOOT) => Some(true),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn install_that_needs_a_restart_succeeds() {
+        assert_eq!(restart_needed(Some(0)), Some(false));
+        assert_eq!(restart_needed(Some(0x8A150109_u32 as i32)), Some(true));
+        assert_eq!(restart_needed(Some(3010)), Some(true));
+        assert_eq!(restart_needed(Some(1)), None);
+        assert_eq!(restart_needed(None), None);
     }
 }
