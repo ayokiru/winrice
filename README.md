@@ -124,7 +124,7 @@ winrice lists every change and asks before it applies anything. Before each appl
 A setup is a TOML file plus images, cursors, fonts and config files. winrice itself never runs anything from it, and only the modules listed above can change your system. Two things deserve a look before you apply a setup from someone you do not know:
 
 - `[apps]` installs programs from winget.
-- Config files for tools like YASB, GlazeWM or Starship can contain commands that the tool runs later. Read them first. winrice refuses to write config files outside the places above or with extensions like `.exe`, `.ps1` or `.bat`.
+- Config files for tools like YASB, GlazeWM or Starship can contain commands that the tool runs later. Read them first. winrice only writes `.yaml`, `.yml`, `.json`, `.jsonc`, `.toml` and `.css` files, and only to the places above.
 
 Applied wallpapers and cursors are copied into `%LOCALAPPDATA%\winrice` and fonts into your user fonts folder, so you can delete the setup folder afterwards. winrice also keeps a copy of Windows Terminal's `settings.json` before rewriting it.
 

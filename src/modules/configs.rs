@@ -20,11 +20,8 @@ const PLACES: &[(&str, &str)] = &[
     ("LOCALAPPDATA", r"programs\oh-my-posh\themes\"),
 ];
 
-/// Never written, even inside an allowed folder.
-const BLOCKED: &[&str] = &[
-    "exe", "dll", "com", "scr", "msi", "msp", "cpl", "sys", "bat", "cmd", "ps1", "psm1", "psd1",
-    "vbs", "vbe", "js", "jse", "wsf", "wsh", "hta", "lnk", "url", "pif", "reg", "xaml",
-];
+/// File types these tools read; anything else (.scf, .html, scripts) is refused.
+const FORMATS: &[&str] = &["yaml", "yml", "json", "jsonc", "toml", "css"];
 
 /// Files capture picks up: (setup file, destination).
 const CAPTURE: &[(&str, &str)] = &[
@@ -87,7 +84,7 @@ fn destination(sys: &dyn System, to: &str) -> Result<PathBuf> {
     });
     let name = parts.last().copied().unwrap_or_default().to_lowercase();
     let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or_default();
-    if !allowed || BLOCKED.contains(&ext) {
+    if !allowed || !FORMATS.contains(&ext) {
         return Err(bad());
     }
     let base = sys
@@ -279,6 +276,10 @@ mod tests {
             r"%USERPROFILE%\.config\yasb",
             r"%USERPROFILE%\.config\yasb\..\..\evil.yaml",
             r"%USERPROFILE%\.config\yasb\run.ps1",
+            r"%USERPROFILE%\.config\yasb\desktop.scf",
+            r"%USERPROFILE%\.config\yasb\x.library-ms",
+            r"%USERPROFILE%\.glzr\zebar\widget.html",
+            r"%USERPROFILE%\.config\yasb\noext",
             r"%USERPROFILE%\.config\yasb\run.BAT",
             r"%USERPROFILE%\.config\yasb\run.bat.",
             r"%USERPROFILE%\.config\yasb\a.yaml:stream",
