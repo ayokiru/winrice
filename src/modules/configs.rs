@@ -191,11 +191,12 @@ impl Module for Configs {
         Ok(t)
     }
 
-    /// Copies of the files the section replaces; files it creates are listed for deletion.
+    /// Copies of the files the section replaces or deletes; files it creates are listed for deletion.
     fn backup(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Table> {
         let mut list = Vec::new();
         let mut unset = Vec::new();
-        for (i, (_, to)) in entries(section)?.into_iter().enumerate() {
+        let written = entries(section)?.into_iter().map(|(_, to)| to);
+        for (i, to) in written.chain(unset_keys(section)?).enumerate() {
             let dest = destination(sys, to)?;
             if dest.is_file() {
                 let name = dest.file_name().unwrap_or_default().to_string_lossy();
@@ -339,6 +340,36 @@ mod tests {
             "bar: old"
         );
         assert!(!dst.join("styles.css").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rollback_restores_files_a_setup_deletes() {
+        let root =
+            std::env::temp_dir().join(format!("winrice-configs-unset-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let glaze = root.join("home/.glzr/glazewm");
+        fs::create_dir_all(&glaze).unwrap();
+        fs::write(glaze.join("config.yaml"), "mine").unwrap();
+        let mut sys = env(&root);
+        let ctx = Ctx {
+            assets: root.join("setup"),
+            data_dir: root.join("data"),
+        };
+        let backup_ctx = Ctx {
+            assets: root.join("backup"),
+            data_dir: root.join("data"),
+        };
+        let section: Table =
+            toml::from_str(r#"unset = ['%USERPROFILE%\.glzr\glazewm\config.yaml']"#).unwrap();
+        let backup = Configs.backup(&sys, &section, &backup_ctx).unwrap();
+        Configs.apply(&mut sys, &section, &ctx).unwrap();
+        assert!(!glaze.join("config.yaml").exists());
+        Configs.apply(&mut sys, &backup, &backup_ctx).unwrap();
+        assert_eq!(
+            fs::read_to_string(glaze.join("config.yaml")).unwrap(),
+            "mine"
+        );
         fs::remove_dir_all(root).unwrap();
     }
 
