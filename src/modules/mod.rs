@@ -30,8 +30,8 @@ pub trait Module {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
     fn capture(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table>;
-    /// What to save before an apply so rollback can restore it.
-    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+    /// What to save before applying `section` so rollback can restore it.
+    fn backup(&self, sys: &dyn System, _section: &Table, ctx: &Ctx) -> Result<Table> {
         self.capture(sys, ctx)
     }
     fn plan(&self, sys: &dyn System, section: &Table, ctx: &Ctx) -> Result<Vec<Change>>;

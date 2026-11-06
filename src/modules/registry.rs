@@ -193,7 +193,7 @@ impl Module for RegModule {
         Ok(t)
     }
 
-    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+    fn backup(&self, sys: &dyn System, _section: &Table, ctx: &Ctx) -> Result<Table> {
         let mut t = self.capture(sys, ctx)?;
         let mut unset = Vec::new();
         for s in self.settings {

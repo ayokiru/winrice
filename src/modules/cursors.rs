@@ -143,7 +143,7 @@ impl Module for Cursors {
         Ok(t)
     }
 
-    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+    fn backup(&self, sys: &dyn System, _section: &Table, ctx: &Ctx) -> Result<Table> {
         let mut t = self.capture(sys, ctx)?;
         t.entry("scheme").or_insert(Value::String(String::new()));
         if sys.reg_get(CURSORS, "CursorBaseSize")?.is_none() {
@@ -301,7 +301,7 @@ mod tests {
             data_dir: "d".into(),
         };
         let mut sys = MockSystem::default();
-        let backup = Cursors.backup(&sys, &ctx).unwrap();
+        let backup = Cursors.backup(&sys, &Table::new(), &ctx).unwrap();
         sys.reg_set(CURSORS, "CursorBaseSize", &RegValue::Dword(48))
             .unwrap();
         let changes = Cursors.apply(&mut sys, &backup, &ctx).unwrap();

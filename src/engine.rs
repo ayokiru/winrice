@@ -42,7 +42,7 @@ pub fn capture(
     only: &[String],
     data_dir: &Path,
 ) -> Result<Setup> {
-    save(sys, out, name, &select(only)?, data_dir, false)
+    save(sys, out, name, &select(only)?, data_dir, None)
 }
 
 fn save(
@@ -51,7 +51,7 @@ fn save(
     name: &str,
     modules: &[Box<dyn Module>],
     data_dir: &Path,
-    backup: bool,
+    backup_of: Option<&Setup>,
 ) -> Result<Setup> {
     let ctx = ctx(out, data_dir);
     let mut setup = Setup {
@@ -63,10 +63,9 @@ fn save(
         ..Setup::default()
     };
     for m in modules {
-        let section = if backup {
-            m.backup(sys, &ctx)?
-        } else {
-            m.capture(sys, &ctx)?
+        let section = match backup_of {
+            Some(s) => m.backup(sys, &s.sections[m.name()], &ctx)?,
+            None => m.capture(sys, &ctx)?,
         };
         if !section.is_empty() {
             setup.sections.insert(m.name().into(), section);
@@ -114,7 +113,7 @@ pub fn apply(
     let modules = setup_modules(setup);
     if backup {
         let path = data_dir.join("backups").join(timestamp());
-        save(sys, &path, "backup", &modules, data_dir, true)?;
+        save(sys, &path, "backup", &modules, data_dir, Some(setup))?;
         prune_backups(data_dir)?;
     }
     let ctx = ctx(dir, data_dir);

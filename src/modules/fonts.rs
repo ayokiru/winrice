@@ -173,7 +173,7 @@ impl Module for Fonts {
     }
 
     /// Rollback never uninstalls fonts, so copying them into every backup is wasted space.
-    fn backup(&self, _sys: &dyn System, _ctx: &Ctx) -> Result<Table> {
+    fn backup(&self, _sys: &dyn System, _section: &Table, _ctx: &Ctx) -> Result<Table> {
         Ok(Table::new())
     }
 

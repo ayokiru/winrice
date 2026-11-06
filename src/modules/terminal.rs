@@ -388,7 +388,7 @@ impl Module for Terminal {
     }
 
     /// The whole file, so rollback restores every profile and the comments too.
-    fn backup(&self, sys: &dyn System, ctx: &Ctx) -> Result<Table> {
+    fn backup(&self, sys: &dyn System, _section: &Table, ctx: &Ctx) -> Result<Table> {
         let mut t = Table::new();
         if let Some(path) = settings_path(sys) {
             fs::create_dir_all(ctx.assets.join("terminal"))?;
@@ -567,7 +567,7 @@ mod tests {
             assets: root.join("backup"),
             data_dir: root.join("data"),
         };
-        let backup = Terminal.backup(&sys, &ctx).unwrap();
+        let backup = Terminal.backup(&sys, &Table::new(), &ctx).unwrap();
         let section: Table = toml::from_str("[defaults]\ncolorScheme = \"Tokyo\"").unwrap();
         let apply_ctx = Ctx {
             assets: root.join("assets"),

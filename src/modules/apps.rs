@@ -95,7 +95,7 @@ impl Module for Apps {
     }
 
     /// Rollback does not uninstall apps, so there is nothing to save.
-    fn backup(&self, _sys: &dyn System, _ctx: &Ctx) -> Result<Table> {
+    fn backup(&self, _sys: &dyn System, _section: &Table, _ctx: &Ctx) -> Result<Table> {
         Ok(Table::new())
     }
 
@@ -156,7 +156,7 @@ mod tests {
         Apps.apply(&mut sys, &section, &ctx()).unwrap();
         assert_eq!(sys.installs, ["Microsoft.PowerToys"]);
         assert!(Apps.plan(&sys, &section, &ctx()).unwrap().is_empty());
-        assert!(Apps.backup(&sys, &ctx()).unwrap().is_empty());
+        assert!(Apps.backup(&sys, &Table::new(), &ctx()).unwrap().is_empty());
     }
 
     #[test]
