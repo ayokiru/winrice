@@ -33,6 +33,10 @@ pub trait System {
     fn load_font(&mut self, path: &Path) -> Result<()>;
     /// Tells running apps (Explorer, taskbar) to reload settings.
     fn notify_changed(&mut self) -> Result<()>;
+    /// Whether a winget package is installed (`winget list --id <id> --exact`).
+    fn winget_installed(&self, id: &str) -> Result<bool>;
+    /// Installs a winget package silently, accepting its license agreements.
+    fn winget_install(&mut self, id: &str) -> Result<()>;
     fn env(&self, name: &str) -> Option<String> {
         std::env::var(name).ok()
     }

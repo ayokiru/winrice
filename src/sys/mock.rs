@@ -11,6 +11,9 @@ pub struct MockSystem {
     pub notified: usize,
     pub cursor_reloads: usize,
     pub fonts: Vec<PathBuf>,
+    /// Installed winget package ids.
+    pub apps: Vec<String>,
+    pub installs: Vec<String>,
 }
 
 impl MockSystem {
@@ -81,6 +84,16 @@ impl System for MockSystem {
 
     fn notify_changed(&mut self) -> Result<()> {
         self.notified += 1;
+        Ok(())
+    }
+
+    fn winget_installed(&self, id: &str) -> Result<bool> {
+        Ok(self.apps.iter().any(|a| a.eq_ignore_ascii_case(id)))
+    }
+
+    fn winget_install(&mut self, id: &str) -> Result<()> {
+        self.apps.push(id.into());
+        self.installs.push(id.into());
         Ok(())
     }
 

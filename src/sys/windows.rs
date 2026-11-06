@@ -3,6 +3,7 @@ use anyhow::{Context, Result, bail};
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use std::process::{Command, ExitStatus, Stdio};
 use windows_sys::Win32::Graphics::Gdi::AddFontResourceW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     HWND_BROADCAST, SMTO_ABORTIFHUNG, SPI_GETDESKWALLPAPER, SPI_SETCURSORS, SPI_SETDESKWALLPAPER,
@@ -22,6 +23,28 @@ impl WinSystem {
             hkcu: RegKey::predef(HKEY_CURRENT_USER),
         }
     }
+}
+
+/// winget's exit code when no installed package matches.
+const NO_APPLICATIONS_FOUND: i32 = 0x8A150014_u32 as i32;
+
+/// Runs winget without input; `quiet` hides its output.
+fn winget(args: &[&str], quiet: bool) -> Result<ExitStatus> {
+    let out = || {
+        if quiet {
+            Stdio::null()
+        } else {
+            Stdio::inherit()
+        }
+    };
+    Command::new("winget")
+        .args(args)
+        .arg("--disable-interactivity")
+        .stdin(Stdio::null())
+        .stdout(out())
+        .stderr(out())
+        .status()
+        .context("cannot run winget (it comes with App Installer from the Microsoft Store)")
 }
 
 fn wide(s: &OsStr) -> Vec<u16> {
@@ -193,6 +216,35 @@ impl System for WinSystem {
                     std::ptr::null_mut(),
                 );
             }
+        }
+        Ok(())
+    }
+
+    fn winget_installed(&self, id: &str) -> Result<bool> {
+        let args = ["list", "--id", id, "--exact", "--source", "winget"];
+        let status = winget(&args, true)?;
+        match status.code() {
+            Some(0) => Ok(true),
+            Some(NO_APPLICATIONS_FOUND) => Ok(false),
+            _ => bail!("`winget list --id {id}` failed ({status})"),
+        }
+    }
+
+    fn winget_install(&mut self, id: &str) -> Result<()> {
+        let args = [
+            "install",
+            "--id",
+            id,
+            "--exact",
+            "--source",
+            "winget",
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+        ];
+        let status = winget(&args, false)?;
+        if !status.success() {
+            bail!("`winget install --id {id}` failed ({status})");
         }
         Ok(())
     }
